@@ -46,8 +46,8 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
         id: data.user.id,
         email: data.user.email!,
         name: data.user.user_metadata?.full_name || 'User',
-        role: roleData.role,
-        status: roleData.status
+        role: roleData.role as 'USER' | 'ADMIN' | 'MODERATOR',
+        status: roleData.status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'SUSPENDED'
       }
 
       // Store minimal user data in localStorage for UI
@@ -147,7 +147,7 @@ export function isAdmin(): boolean {
   const user = getCurrentUser()
   // Check role from metadata or default admin emails
   const adminEmails = ['admin@publichealthy.com', 'admin@example.com']
-  return user?.role === 'ADMIN' || user?.role === 'MODERATOR' || (user && adminEmails.includes(user.email))
+  return !!(user?.role === 'ADMIN' || user?.role === 'MODERATOR' || (user && adminEmails.includes(user.email)))
 }
 
 export function canAccessDashboard(): boolean {
