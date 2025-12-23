@@ -1,9 +1,25 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { validateEnvironment } from '../env-validation'
 
 export function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+    throw new Error('supabaseUrl is required')
+  }
+
+  if (!supabaseAnonKey) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+    throw new Error('supabaseAnonKey is required')
+  }
+
+  console.log('Initializing Supabase client with URL:', supabaseUrl.substring(0, 30) + '...')
+
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       auth: {
         persistSession: true,

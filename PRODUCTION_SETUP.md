@@ -7,8 +7,8 @@
 ### 1. Supabase Configuration
 ```env
 NEXT_PUBLIC_SUPABASE_URL="https://latplvqjbpclasvvtpeu.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key_here"
-SUPABASE_SERVICE_ROLE_KEY="your_service_role_key_here"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhdHBsdnFqYnBjbGFzdnZ0cGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NjczNzEsImV4cCI6MjA1MDU0MzM3MX0.Wdmtpl5eFJh6KKGSDcczeDzE0DQ7cHEUEXOUNkcvIek"
+SUPABASE_SERVICE_ROLE_KEY="get_from_dashboard"
 ```
 
 ### 2. Database
@@ -34,8 +34,21 @@ PORT=3000
 
 ## 🚀 Deployment Steps
 
-### On Plesk Server:
+### Option 1: Use Setup Script (Recommended)
 1. Upload code to server
+2. Run the automated setup script:
+   ```bash
+   chmod +x setup-production-env.sh
+   ./setup-production-env.sh
+   ```
+3. Edit `.env.local` to add the SERVICE_ROLE_KEY from Supabase dashboard
+4. Start the application:
+   ```bash
+   npm start
+   ```
+
+### Option 2: Manual Setup
+1. Upload code to server  
 2. Create `.env.local` file with all environment variables
 3. Run:
    ```bash
