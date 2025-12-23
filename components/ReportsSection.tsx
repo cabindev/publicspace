@@ -86,6 +86,11 @@ export default function ReportsSection() {
                       <h3 className="text-sm font-medium text-gray-900 truncate group-hover:text-green-600 transition-colors">
                         {report.title}
                       </h3>
+                      {report.description && (
+                        <p className="text-xs text-gray-600 truncate mt-0.5">
+                          {report.description}
+                        </p>
+                      )}
                       <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
                         <span className="flex items-center">
                           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

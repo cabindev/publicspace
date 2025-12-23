@@ -8,6 +8,29 @@ export interface User {
   status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'ACTIVE'
 }
 
+export async function signInWithGoogle(): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const supabase = createClient()
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+
+    if (error) {
+      console.error('Google sign-in error:', error.message)
+      return { error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Google sign-in catch error:', error)
+    return { error: 'Google sign-in failed' }
+  }
+}
+
 export async function signIn(email: string, password: string): Promise<{ user?: User; error?: string }> {
   try {
     const supabase = createClient()
