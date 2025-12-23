@@ -27,34 +27,54 @@ function AuthCallback() {
           const user = data.session.user
           console.log('OAuth user authenticated:', user.email)
           
+          let userRole = 'USER'
+          let userStatus = 'PENDING'
+
           try {
-            // Try to create user record (will fail if already exists, which is fine)
-            const { error: dbError } = await supabase
+            // Check if user already exists in database and get their role
+            const { data: existingUser, error: fetchError } = await supabase
               .from('users')
-              .insert([
-                {
-                  id: user.id,
-                  email: user.email,
-                  name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
-                  role: 'USER',
-                  status: 'PENDING'
-                }
-              ])
-            
-            if (dbError && !dbError.message.includes('duplicate key')) {
-              console.error('Database insert error:', dbError.message)
+              .select('role, status')
+              .eq('id', user.id)
+              .single()
+
+            if (existingUser) {
+              // User exists, use their current role and status
+              userRole = existingUser.role
+              userStatus = existingUser.status
+              console.log('Existing user found with role:', userRole, 'status:', userStatus)
+            } else if (fetchError && fetchError.code === 'PGRST116') {
+              // User doesn't exist, create new record
+              console.log('Creating new user record')
+              const { error: dbError } = await supabase
+                .from('users')
+                .insert([
+                  {
+                    id: user.id,
+                    email: user.email,
+                    name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
+                    role: 'USER',
+                    status: 'PENDING'
+                  }
+                ])
+              
+              if (dbError) {
+                console.error('Database insert error:', dbError.message)
+              }
+            } else if (fetchError) {
+              console.error('Error fetching existing user:', fetchError.message)
             }
           } catch (dbError) {
             console.error('Database error during OAuth:', dbError)
           }
 
-          // Store user info for the frontend
+          // Store user info for the frontend with actual role from database
           const userData = {
             id: user.id,
             email: user.email!,
             name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
-            role: 'USER',
-            status: 'PENDING'
+            role: userRole as 'USER' | 'ADMIN' | 'MODERATOR',
+            status: userStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'SUSPENDED'
           }
           
           localStorage.setItem('user', JSON.stringify(userData))
