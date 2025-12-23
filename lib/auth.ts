@@ -12,12 +12,14 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
   try {
     const supabase = createClient()
     
+    console.log('Attempting login for:', email)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
+      console.error('Supabase auth error:', error.message)
       return { error: error.message }
     }
 
@@ -25,6 +27,7 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
       // Get user role from database
       let roleData = { role: 'USER', status: 'PENDING' }
       try {
+        console.log('Fetching role for user:', data.user.email)
         const roleResponse = await fetch('/api/user/role', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -33,10 +36,13 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
         
         if (roleResponse.ok) {
           const response = await roleResponse.json()
+          console.log('Role response:', response)
           roleData = {
             role: (response.role || 'USER') as 'USER' | 'ADMIN' | 'MODERATOR',
             status: (response.status || 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'ACTIVE'
           }
+        } else {
+          console.error('Role API error:', roleResponse.status, await roleResponse.text())
         }
       } catch (roleError) {
         console.error('Error fetching role:', roleError)
