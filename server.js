@@ -7,9 +7,9 @@ try {
   console.warn('   Using system environment variables or fallback values')
 }
 
-const { createServer } = require('http')
-const { parse } = require('url')
 const next = require('next')
+const express = require('express')
+const path = require('path')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = process.env.HOSTNAME || 'localhost'
@@ -28,34 +28,21 @@ const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
 app.prepare().then(() => {
-  createServer(async (req, res) => {
-    try {
-      // Be sure to pass `true` as the second argument to `url.parse`.
-      // This tells it to parse the query portion of the URL.
-      const parsedUrl = parse(req.url, true)
-      const { pathname, query } = parsedUrl
-
-      // Handle file uploads and API routes
-      if (pathname.startsWith('/api/')) {
-        await handle(req, res, parsedUrl)
-      } else if (pathname.startsWith('/_next/')) {
-        // Handle Next.js static files
-        await handle(req, res, parsedUrl)
-      } else {
-        // Handle all other routes
-        await handle(req, res, parsedUrl)
-      }
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err)
-      res.statusCode = 500
-      res.end('internal server error')
-    }
+  const server = express()
+  
+  // ตั้งค่าเสิร์ฟไฟล์ static จากโฟลเดอร์ public/report สำหรับรูปภาพที่อัปโหลด
+  server.use('/report', express.static(path.join(__dirname, 'public/report')))
+  
+  // ตั้งค่าเสิร์ฟไฟล์ static อื่นๆ
+  server.use('/images', express.static(path.join(__dirname, 'public/images')))
+  server.use('/assets', express.static(path.join(__dirname, 'public/assets')))
+  
+  server.all('*', (req, res) => {
+    return handle(req, res)
   })
-    .once('error', (err) => {
-      console.error(err)
-      process.exit(1)
-    })
-    .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`)
-    })
+
+  server.listen(port, (err) => {
+    if (err) throw err
+    console.log(`> Ready on http://${hostname}:${port}`)
+  })
 })
