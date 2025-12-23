@@ -45,6 +45,7 @@ function serveStaticFile(req, res, filePath) {
           '.svg': 'image/svg+xml'
         }
         res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+        res.setHeader('Cache-Control', 'public, max-age=31536000')
         fs.createReadStream(filePath).pipe(res)
         return true
       }
