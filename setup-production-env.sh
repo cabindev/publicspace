@@ -14,7 +14,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 
 # IMPORTANT: Get this from Supabase Dashboard > Settings > API > service_role key
 # https://supabase.com/dashboard/project/latplvqjbpclasvvtpeu/settings/api-keys
-SUPABASE_SERVICE_ROLE_KEY=REPLACE_WITH_ACTUAL_SERVICE_ROLE_KEY
+# Copy the "service_role" key (starts with eyJhbGci...)
+SUPABASE_SERVICE_ROLE_KEY=REPLACE_WITH_ACTUAL_SERVICE_ROLE_KEY_FROM_DASHBOARD
 
 # App Configuration  
 NEXT_PUBLIC_APP_URL=https://healthypublicspaces.com
