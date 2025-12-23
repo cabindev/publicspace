@@ -1,5 +1,7 @@
 # Production Deployment Instructions
 
+**Production URL:** https://healthypublicspaces.com
+
 ## 🔧 Environment Variables Required
 
 ### 1. Supabase Configuration
@@ -46,14 +48,14 @@ PORT=3000
 
 ### Test login:
 ```bash
-curl -X POST https://your-domain.com/api/debug/auth \
+curl -X POST https://healthypublicspaces.com/api/debug/auth \
   -H "Content-Type: application/json" \
   -d '{"email":"evo_reaction@hotmail.com","password":"your_password"}'
 ```
 
 ### Test signup:
 ```bash
-curl -X POST https://your-domain.com/api/debug/signup \
+curl -X POST https://healthypublicspaces.com/api/debug/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 ```

@@ -13,6 +13,12 @@ const nextConfig = {
         hostname: 'localhost',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'healthypublicspaces.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
