@@ -7,8 +7,10 @@ try {
   console.warn('   Using system environment variables or fallback values')
 }
 
+const { createServer } = require('http')
+const { parse } = require('url')
 const next = require('next')
-const express = require('express')
+const fs = require('fs')
 const path = require('path')
 
 const dev = process.env.NODE_ENV !== 'production'
@@ -27,22 +29,63 @@ console.log('=============================')
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
-app.prepare().then(() => {
-  const server = express()
-  
-  // ตั้งค่าเสิร์ฟไฟล์ static จากโฟลเดอร์ public/report สำหรับรูปภาพที่อัปโหลด
-  server.use('/report', express.static(path.join(__dirname, 'public/report')))
-  
-  // ตั้งค่าเสิร์ฟไฟล์ static อื่นๆ
-  server.use('/images', express.static(path.join(__dirname, 'public/images')))
-  server.use('/assets', express.static(path.join(__dirname, 'public/assets')))
-  
-  server.all('*', (req, res) => {
-    return handle(req, res)
-  })
+// Simple static file serving function
+function serveStaticFile(req, res, filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath)
+      if (stat.isFile()) {
+        const ext = path.extname(filePath).toLowerCase()
+        const mimeTypes = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.svg': 'image/svg+xml'
+        }
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+        fs.createReadStream(filePath).pipe(res)
+        return true
+      }
+    }
+  } catch (error) {
+    console.error('Error serving static file:', error)
+  }
+  return false
+}
 
-  server.listen(port, (err) => {
-    if (err) throw err
-    console.log(`> Ready on http://${hostname}:${port}`)
+app.prepare().then(() => {
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true)
+      const { pathname } = parsedUrl
+
+      // Handle static files for uploaded images and assets
+      if (pathname.startsWith('/report/')) {
+        const filePath = path.join(__dirname, 'public', pathname)
+        if (serveStaticFile(req, res, filePath)) return
+      } else if (pathname.startsWith('/images/')) {
+        const filePath = path.join(__dirname, 'public', pathname)
+        if (serveStaticFile(req, res, filePath)) return
+      } else if (pathname.startsWith('/assets/')) {
+        const filePath = path.join(__dirname, 'public', pathname)
+        if (serveStaticFile(req, res, filePath)) return
+      }
+
+      // Handle all other routes with Next.js
+      await handle(req, res, parsedUrl)
+    } catch (err) {
+      console.error('Error occurred handling', req.url, err)
+      res.statusCode = 500
+      res.end('internal server error')
+    }
   })
+    .once('error', (err) => {
+      console.error(err)
+      process.exit(1)
+    })
+    .listen(port, () => {
+      console.log(`> Ready on http://${hostname}:${port}`)
+    })
 })
