@@ -78,6 +78,9 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
 export async function signUp(email: string, password: string, fullName: string): Promise<{ success?: boolean; error?: string }> {
   try {
     const supabase = createClient()
+    
+    console.log('Attempting signup for:', email, 'with name:', fullName)
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -90,16 +93,50 @@ export async function signUp(email: string, password: string, fullName: string):
     })
 
     if (error) {
+      console.error('Supabase signup error:', error.message)
       return { error: error.message }
     }
 
+    console.log('Signup result - User created:', !!data.user)
+    console.log('Signup result - Session:', !!data.session)
+    console.log('Signup result - User ID:', data.user?.id)
+    console.log('Signup result - Email confirmed:', data.user?.email_confirmed_at)
+
     if (data.user) {
+      // Create user record in database
+      try {
+        console.log('Creating user record in database...')
+        const { error: dbError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+              name: fullName,
+              role: 'USER',
+              status: 'PENDING'
+            }
+          ])
+
+        if (dbError) {
+          console.error('Database insert error:', dbError.message)
+          // Don't fail registration if database insert fails
+          // User can still login and we can handle missing DB record later
+        } else {
+          console.log('User record created successfully in database')
+        }
+      } catch (dbError) {
+        console.error('Database error during signup:', dbError)
+      }
+
       return { success: true }
     }
 
+    console.log('Registration failed: No user returned')
     return { error: 'Registration failed' }
   } catch (error) {
-    return { error: 'Registration failed' }
+    console.error('Signup catch error:', error)
+    return { error: 'Registration failed: ' + (error instanceof Error ? error.message : 'Unknown error') }
   }
 }
 
