@@ -57,6 +57,35 @@ PORT=3000
    npm start
    ```
 
+## 🔧 Plesk-Specific Configuration
+
+### server.js Features:
+- ✅ **Automatic .env.local loading** with dotenv
+- ✅ **Environment variables debugging** on startup
+- ✅ **Fallback values** if .env.local is missing
+- ✅ **Error handling** for missing environment files
+
+### Test Environment Loading:
+```bash
+# Test environment variables loading
+node test-server.js
+
+# Start production server
+npm start
+```
+
+### Expected Server Startup Logs:
+```
+✅ Loaded environment variables from .env.local
+=== SERVER STARTUP DEBUG ===
+NODE_ENV: production
+NEXT_PUBLIC_SUPABASE_URL: SET
+NEXT_PUBLIC_SUPABASE_ANON_KEY: SET
+SUPABASE_SERVICE_ROLE_KEY: SET
+=============================
+> Ready on http://localhost:3000
+```
+
 ## 🐛 Debug Authentication Issues
 
 ### Test login:

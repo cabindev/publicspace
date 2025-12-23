@@ -41,6 +41,10 @@ echo "🔧 Running deployment commands..."
 echo "📦 Installing dependencies..."
 npm install
 
+# Install dotenv for environment variable loading
+echo "📦 Installing dotenv for environment variables..."
+npm install dotenv
+
 # Build the application
 echo "🔨 Building application..."
 npm run build
