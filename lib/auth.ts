@@ -11,7 +11,7 @@ export interface User {
 export async function signIn(email: string, password: string): Promise<{ user?: User; error?: string }> {
   try {
     const supabase = createClient()
-    
+
     console.log('Attempting login for:', email)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -33,7 +33,7 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: data.user.email })
         })
-        
+
         if (roleResponse.ok) {
           const response = await roleResponse.json()
           console.log('Role response:', response)
@@ -58,13 +58,13 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
 
       // Store minimal user data in localStorage for UI
       localStorage.setItem('user', JSON.stringify(user))
-      
+
       // Set session cookie for API routes
       document.cookie = `sb-access-token=${data.session?.access_token || ''}; Path=/; SameSite=Lax`
       document.cookie = `sb-refresh-token=${data.session?.refresh_token || ''}; Path=/; SameSite=Lax`
-      
+
       window.dispatchEvent(new Event('userUpdate'))
-      
+
       return { user }
     }
 
@@ -78,9 +78,9 @@ export async function signIn(email: string, password: string): Promise<{ user?: 
 export async function signUp(email: string, password: string, fullName: string): Promise<{ success?: boolean; error?: string }> {
   try {
     const supabase = createClient()
-    
+
     console.log('Attempting signup for:', email, 'with name:', fullName)
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -145,29 +145,29 @@ export async function signOut(): Promise<void> {
     const supabase = createClient()
     await supabase.auth.signOut()
     localStorage.removeItem('user')
-    
+
     // Clear session cookies
     document.cookie = 'sb-access-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT'
     document.cookie = 'sb-refresh-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT'
-    
+
     // Dispatch custom event for immediate updates
     window.dispatchEvent(new Event('userUpdate'))
   } catch (error) {
     console.error('Sign out error:', error)
     // Still clean up localStorage even if Supabase signOut fails
     localStorage.removeItem('user')
-    
+
     // Clear session cookies
     document.cookie = 'sb-access-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT'
     document.cookie = 'sb-refresh-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT'
-    
+
     window.dispatchEvent(new Event('userUpdate'))
   }
 }
 
 export function getCurrentUser(): User | null {
   if (typeof window === 'undefined') return null
-  
+
   try {
     const userStr = localStorage.getItem('user')
     if (userStr) {
@@ -177,7 +177,7 @@ export function getCurrentUser(): User | null {
     console.error('Error parsing user:', error)
     localStorage.removeItem('user')
   }
-  
+
   return null
 }
 
@@ -189,7 +189,7 @@ export function isAuthenticated(): boolean {
 export function isAdmin(): boolean {
   const user = getCurrentUser()
   // Check role from metadata or default admin emails
-  const adminEmails = ['admin@publichealthy.com', 'admin@example.com']
+  const adminEmails = ['admin@publichealthy.com', 'admin@example.com', 'evo_reaction022@hotmail.com']
   return !!(user?.role === 'ADMIN' || user?.role === 'MODERATOR' || (user && adminEmails.includes(user.email)))
 }
 
