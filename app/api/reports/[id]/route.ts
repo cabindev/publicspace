@@ -131,3 +131,75 @@ export async function PATCH(
     )
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createRouteClient()
+    const { id } = await params
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication failed' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user has admin permissions
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (userError || !userData || userData.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      )
+    }
+
+    // Get report details before deletion (for potential cleanup)
+    const { data: report, error: getError } = await supabase
+      .from('reports')
+      .select('id, title, image_url')
+      .eq('id', id)
+      .single()
+
+    if (getError) {
+      return NextResponse.json(
+        { error: 'Report not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the report
+    const { error: deleteError } = await supabase
+      .from('reports')
+      .delete()
+      .eq('id', id)
+
+    if (deleteError) {
+      console.error('Error deleting report:', deleteError)
+      return NextResponse.json(
+        { error: 'Failed to delete report' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ 
+      message: 'Report deleted successfully',
+      deletedReport: { id, title: report.title }
+    })
+  } catch (error) {
+    console.error('Error deleting report:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

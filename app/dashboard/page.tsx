@@ -29,6 +29,8 @@ export default function DashboardPage() {
   const [reportsLoading, setReportsLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [deletingReport, setDeletingReport] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{reportId: string, title: string} | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [filterType, setFilterType] = useState<string>('ALL')
@@ -103,6 +105,41 @@ export default function DashboardPage() {
       alert('เกิดข้อผิดพลาด กรุณาลองใหม่')
     } finally {
       setUpdatingStatus(null)
+    }
+  }
+
+  const deleteReport = async (reportId: string) => {
+    setDeletingReport(reportId)
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Remove the report from the list
+        setReports(prev => prev.filter(report => report.id !== reportId))
+        setDeleteConfirm(null)
+        
+        // Adjust current page if needed
+        const newFilteredReports = reports.filter(report => 
+          report.id !== reportId &&
+          (filterStatus === 'ALL' || report.status === filterStatus) &&
+          (filterType === 'ALL' || report.location_type === filterType)
+        )
+        const newTotalPages = Math.ceil(newFilteredReports.length / itemsPerPage)
+        if (currentPage > newTotalPages && newTotalPages > 0) {
+          setCurrentPage(newTotalPages)
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to delete report:', errorData.error)
+        alert('ไม่สามารถลบรายงานได้ กรุณาลองใหม่')
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error)
+      alert('เกิดข้อผิดพลาด กรุณาลองใหม่')
+    } finally {
+      setDeletingReport(null)
     }
   }
 
@@ -385,28 +422,37 @@ export default function DashboardPage() {
                           {new Date(report.created_at).toLocaleDateString('th-TH')}
                         </td>
                         <td className="px-3 py-2 text-xs">
-                          {report.status === 'PENDING' ? (
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => updateReportStatus(report.id, 'APPROVED')}
-                                disabled={updatingStatus === report.id}
-                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {updatingStatus === report.id ? '...' : 'อนุมัติ'}
-                              </button>
-                              <button
-                                onClick={() => updateReportStatus(report.id, 'REJECTED')}
-                                disabled={updatingStatus === report.id}
-                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {updatingStatus === report.id ? '...' : 'ปฏิเสธ'}
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 text-xs">
-                              {report.status === 'APPROVED' ? 'อนุมัติแล้ว' : 'ปฏิเสธแล้ว'}
-                            </span>
-                          )}
+                          <div className="flex space-x-1">
+                            {report.status === 'PENDING' ? (
+                              <>
+                                <button
+                                  onClick={() => updateReportStatus(report.id, 'APPROVED')}
+                                  disabled={updatingStatus === report.id}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {updatingStatus === report.id ? '...' : 'อนุมัติ'}
+                                </button>
+                                <button
+                                  onClick={() => updateReportStatus(report.id, 'REJECTED')}
+                                  disabled={updatingStatus === report.id}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {updatingStatus === report.id ? '...' : 'ปฏิเสธ'}
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 text-xs">
+                                {report.status === 'APPROVED' ? 'อนุมัติแล้ว' : 'ปฏิเสธแล้ว'}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => setDeleteConfirm({reportId: report.id, title: report.title})}
+                              disabled={deletingReport === report.id || updatingStatus === report.id}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {deletingReport === report.id ? '...' : 'ลบ'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -480,6 +526,36 @@ export default function DashboardPage() {
           </div>
         </div>
         </main>
+        
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded p-4 max-w-md w-full mx-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                ยืนยันการลบรายงาน
+              </h3>
+              <p className="text-xs text-gray-600 mb-4">
+                คุณแน่ใจหรือไม่ที่จะลบรายงาน "{deleteConfirm.title}" การกระทำนี้ไม่สามารถยกเลิกได้
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={deletingReport === deleteConfirm.reportId}
+                  className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={() => deleteReport(deleteConfirm.reportId)}
+                  disabled={deletingReport === deleteConfirm.reportId}
+                  className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deletingReport === deleteConfirm.reportId ? 'กำลังลบ...' : 'ลบ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuthErrorBoundary>
   )
