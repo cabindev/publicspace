@@ -29,8 +29,13 @@ export default function DashboardPage() {
   const [reportsLoading, setReportsLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [filterStatus, setFilterStatus] = useState<string>('ALL')
+  const [filterType, setFilterType] = useState<string>('ALL')
   const { user, loading } = useAuth()
   const router = useRouter()
+  
+  const itemsPerPage = 10
 
   useEffect(() => {
     // Wait for auth to load
@@ -115,11 +120,28 @@ export default function DashboardPage() {
     return null
   }
   
+  // Filter reports based on status and type
+  const filteredReports = reports.filter(report => {
+    const statusMatch = filterStatus === 'ALL' || report.status === filterStatus
+    const typeMatch = filterType === 'ALL' || report.location_type === filterType
+    return statusMatch && typeMatch
+  })
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedReports = filteredReports.slice(startIndex, endIndex)
+
+  // Get unique location types for filter
+  const uniqueLocationTypes = [...new Set(reports.map(report => report.location_type))]
+  
   const stats = {
     total: reports.length,
     pending: reports.filter((r) => r.status === 'PENDING').length,
     approved: reports.filter((r) => r.status === 'APPROVED').length,
     rejected: reports.filter((r) => r.status === 'REJECTED').length,
+    filtered: filteredReports.length,
   }
 
   return (
@@ -129,25 +151,25 @@ export default function DashboardPage() {
 
         {/* Page Header */}
         <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">ติดตามสถิติและจัดการรายงานของคุณ</p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1 text-sm">ติดตามสถิติและจัดการรายงานของคุณ</p>
           </div>
         </div>
 
-        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
         {/* Navigation */}
-        <div className="mb-6">
+        <div className="mb-4">
           <nav className="flex space-x-4">
             <Link
               href="/"
-              className="text-blue-600 hover:text-blue-500 font-medium"
+              className="text-gray-700 hover:text-gray-900 text-sm"
             >
               ← กลับหน้าหลัก
             </Link>
             <Link
               href="/healthy"
-              className="text-green-600 hover:text-green-500 font-medium"
+              className="text-green-600 hover:text-green-700 text-sm"
             >
               รายงานพื้นที่สาธารณะ
             </Link>
@@ -155,111 +177,106 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">📊</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      รายงานทั้งหมด
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white border border-gray-200 rounded p-3">
+            <div className="text-xs text-gray-500 uppercase">รายงานทั้งหมด</div>
+            <div className="text-lg font-semibold text-gray-900 mt-1">{stats.total}</div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">⏳</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      รอการตรวจสอบ
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.pending}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white border border-gray-200 rounded p-3">
+            <div className="text-xs text-gray-500 uppercase">รอการตรวจสอบ</div>
+            <div className="text-lg font-semibold text-orange-600 mt-1">{stats.pending}</div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">✓</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      อนุมัติแล้ว
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.approved}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white border border-gray-200 rounded p-3">
+            <div className="text-xs text-gray-500 uppercase">อนุมัติแล้ว</div>
+            <div className="text-lg font-semibold text-green-600 mt-1">{stats.approved}</div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">✗</span>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      ไม่อนุมัติ
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.rejected}</dd>
-                  </dl>
-                </div>
+          <div className="bg-white border border-gray-200 rounded p-3">
+            <div className="text-xs text-gray-500 uppercase">ไม่อนุมัติ</div>
+            <div className="text-lg font-semibold text-red-600 mt-1">{stats.rejected}</div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="bg-white border border-gray-200 rounded mb-4">
+          <div className="px-4 py-3">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">
+              กรองข้อมูล
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  สถานะ
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-500"
+                >
+                  <option value="ALL">ทั้งหมด</option>
+                  <option value="PENDING">รอตรวจสอบ</option>
+                  <option value="APPROVED">อนุมัติแล้ว</option>
+                  <option value="REJECTED">ไม่อนุมัติ</option>
+                </select>
               </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
+                  ประเภทสถานที่
+                </label>
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-500"
+                >
+                  <option value="ALL">ทั้งหมด</option>
+                  {uniqueLocationTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setFilterStatus('ALL')
+                    setFilterType('ALL')
+                    setCurrentPage(1)
+                  }}
+                  className="w-full px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                >
+                  ล้างตัวกรอง
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-gray-500">
+              แสดง {stats.filtered} จาก {stats.total} รายงาน
             </div>
           </div>
         </div>
 
         {/* Reports Table */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-              รายงานล่าสุด
+        <div className="bg-white border border-gray-200 rounded">
+          <div className="px-4 py-3">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">
+              รายงาน
             </h3>
             {reportsLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-pulse">
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6 mx-auto"></div>
-                  </div>
-                </div>
-                <div className="text-gray-500 mt-4">กำลังโหลดรายงาน...</div>
+              <div className="text-center py-6">
+                <div className="text-gray-500 text-sm">กำลังโหลดรายงาน...</div>
               </div>
             ) : reports.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-500">ยังไม่มีรายงาน</div>
+              <div className="text-center py-6">
+                <div className="text-gray-500 text-sm">ยังไม่มีรายงาน</div>
                 <Link
                   href="/healthy"
-                  className="mt-2 inline-block text-blue-600 hover:text-blue-500"
+                  className="mt-2 inline-block text-gray-700 hover:text-gray-900 text-sm"
                 >
                   สร้างรายงานแรกของคุณ →
                 </Link>
@@ -269,41 +286,51 @@ export default function DashboardPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         หัวข้อ
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+                        รายละเอียด
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         รูปภาพ
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         สถานที่
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         ประเภท
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         สถานะ
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         ผู้รายงาน
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         วันที่
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         การจัดการ
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {reports.slice(0, 10).map((report) => (
+                    {paginatedReports.map((report) => (
                       <tr key={report.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {report.title}
+                        <td className="px-3 py-2 text-xs text-gray-900 max-w-32">
+                          <div className="truncate" title={report.title}>
+                            {report.title}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 text-xs text-gray-500 max-w-32">
+                          <div className="truncate" title={report.description || 'ไม่มีรายละเอียด'}>
+                            {report.description || 'ไม่มีรายละเอียด'}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">
                           {report.image_url ? (
-                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                            <div className="w-10 h-10 rounded overflow-hidden bg-gray-100">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={report.image_url.startsWith('/') ? report.image_url : `/${report.image_url}`}
@@ -314,35 +341,33 @@ export default function DashboardPage() {
                                   target.style.display = 'none';
                                   target.parentElement!.innerHTML = `
                                     <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                      <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
+                                      <div class="w-3 h-3 bg-gray-400 rounded"></div>
                                     </div>
                                   `;
                                 }}
                               />
                             </div>
                           ) : (
-                            <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
-                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
+                            <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
+                              <div className="w-3 h-3 bg-gray-400 rounded"></div>
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {report.location}
+                        <td className="px-3 py-2 text-xs text-gray-500 max-w-24">
+                          <div className="truncate" title={report.location}>
+                            {report.location}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 text-xs text-gray-500">
                           {report.location_type}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex px-1 py-0.5 text-xs rounded ${
                             report.status === 'APPROVED'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-green-100 text-green-700'
                               : report.status === 'REJECTED'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-orange-100 text-orange-700'
                           }`}>
                             {report.status === 'APPROVED'
                               ? 'อนุมัติ'
@@ -351,28 +376,30 @@ export default function DashboardPage() {
                               : 'รอตรวจสอบ'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {report.user.name || report.user.email}
+                        <td className="px-3 py-2 text-xs text-gray-500 max-w-24">
+                          <div className="truncate" title={report.user.name || report.user.email}>
+                            {report.user.name || report.user.email}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 text-xs text-gray-500">
                           {new Date(report.created_at).toLocaleDateString('th-TH')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 text-xs">
                           {report.status === 'PENDING' ? (
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-1">
                               <button
                                 onClick={() => updateReportStatus(report.id, 'APPROVED')}
                                 disabled={updatingStatus === report.id}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {updatingStatus === report.id ? 'กำลังอัปเดต...' : 'อนุมัติ'}
+                                {updatingStatus === report.id ? '...' : 'อนุมัติ'}
                               </button>
                               <button
                                 onClick={() => updateReportStatus(report.id, 'REJECTED')}
                                 disabled={updatingStatus === report.id}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {updatingStatus === report.id ? 'กำลังอัปเดต...' : 'ปฏิเสธ'}
+                                {updatingStatus === report.id ? '...' : 'ปฏิเสธ'}
                               </button>
                             </div>
                           ) : (
@@ -385,6 +412,69 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {!reportsLoading && filteredReports.length > 0 && totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-3">
+                <div className="text-xs text-gray-600">
+                  แสดง {startIndex + 1} ถึง {Math.min(endIndex, filteredReports.length)} จาก {filteredReports.length} รายงาน
+                </div>
+                <div className="flex items-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 text-xs text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  
+                  <div className="flex space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                      if (
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 2 && page <= currentPage + 2)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-2 py-1 text-xs rounded ${
+                              page === currentPage
+                                ? 'bg-gray-800 text-white'
+                                : 'text-gray-600 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      } else if (
+                        page === currentPage - 3 || 
+                        page === currentPage + 3
+                      ) {
+                        return (
+                          <span key={page} className="px-1 py-1 text-xs text-gray-400">
+                            ...
+                          </span>
+                        )
+                      }
+                      return null
+                    })}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2 py-1 text-xs text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
               </div>
             )}
           </div>
