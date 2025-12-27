@@ -1,4 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+
+export async function POST(request: NextRequest) {
+  // SECURITY: Upload functionality temporarily disabled due to malware incident
+  // Date: 2024-12-27 - Investigation ongoing
+  // This prevents potential RCE attacks through file uploads
+  return NextResponse.json(
+    { error: 'File upload temporarily disabled for security maintenance' },
+    { status: 503 }
+  )
+}
+
+/* Original upload code disabled for security investigation
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
@@ -70,3 +82,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+*/

@@ -29,13 +29,23 @@ console.log('=============================')
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
-// Simple static file serving function
+// Simple static file serving function with security checks
 function serveStaticFile(req, res, filePath) {
   try {
-    if (fs.existsSync(filePath)) {
-      const stat = fs.statSync(filePath)
+    // Security: Prevent path traversal attacks
+    const resolvedPath = path.resolve(filePath)
+    const publicDir = path.resolve(__dirname, 'public')
+    
+    // Ensure the resolved path is within the public directory
+    if (!resolvedPath.startsWith(publicDir)) {
+      console.warn('Path traversal attempt detected:', filePath)
+      return false
+    }
+    
+    if (fs.existsSync(resolvedPath)) {
+      const stat = fs.statSync(resolvedPath)
       if (stat.isFile()) {
-        const ext = path.extname(filePath).toLowerCase()
+        const ext = path.extname(resolvedPath).toLowerCase()
         const mimeTypes = {
           '.jpg': 'image/jpeg',
           '.jpeg': 'image/jpeg',
@@ -44,9 +54,17 @@ function serveStaticFile(req, res, filePath) {
           '.webp': 'image/webp',
           '.svg': 'image/svg+xml'
         }
-        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+        
+        // Security: Only serve allowed file types
+        if (!mimeTypes[ext]) {
+          console.warn('Blocked attempt to serve non-image file:', filePath)
+          return false
+        }
+        
+        res.setHeader('Content-Type', mimeTypes[ext])
         res.setHeader('Cache-Control', 'public, max-age=31536000')
-        fs.createReadStream(filePath).pipe(res)
+        res.setHeader('X-Content-Type-Options', 'nosniff')
+        fs.createReadStream(resolvedPath).pipe(res)
         return true
       }
     }
@@ -59,6 +77,13 @@ function serveStaticFile(req, res, filePath) {
 app.prepare().then(() => {
   createServer(async (req, res) => {
     try {
+      // Add security headers
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('X-Frame-Options', 'DENY')
+      res.setHeader('X-XSS-Protection', '1; mode=block')
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+      res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://latplvqjbpclasvvtpeu.supabase.co;")
+      
       const parsedUrl = parse(req.url, true)
       const { pathname } = parsedUrl
 

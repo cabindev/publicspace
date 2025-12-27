@@ -150,6 +150,7 @@ export async function POST(request: NextRequest) {
 
     const { title, description, reportType, location, locationType, imageUrl } = await request.json()
 
+    // Input validation and sanitization
     if (!title || !reportType || !location || !locationType) {
       return NextResponse.json(
         { error: 'Title, report type, location, and location type are required' },
@@ -157,13 +158,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Security: Validate input lengths and content
+    if (typeof title !== 'string' || title.length > 200) {
+      return NextResponse.json(
+        { error: 'Title must be a string with maximum 200 characters' },
+        { status: 400 }
+      )
+    }
+
+    if (description && (typeof description !== 'string' || description.length > 2000)) {
+      return NextResponse.json(
+        { error: 'Description must be a string with maximum 2000 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Validate report type
+    const validReportTypes = ['SAFETY', 'MAINTENANCE', 'CLEANLINESS', 'ACCESSIBILITY', 'OTHER']
+    if (!validReportTypes.includes(reportType)) {
+      return NextResponse.json(
+        { error: 'Invalid report type' },
+        { status: 400 }
+      )
+    }
+
+    // Validate location type  
+    const validLocationTypes = ['PARK', 'PLAYGROUND', 'WALKWAY', 'BUILDING', 'OTHER']
+    if (!validLocationTypes.includes(locationType)) {
+      return NextResponse.json(
+        { error: 'Invalid location type' },
+        { status: 400 }
+      )
+    }
+
+    // Sanitize strings
+    const sanitizedTitle = title.trim().substring(0, 200)
+    const sanitizedDescription = description ? description.trim().substring(0, 2000) : null
+    const sanitizedLocation = location.trim().substring(0, 500)
+
     const { data: report, error } = await supabase
       .from('reports')
       .insert({
-        title,
-        description: description || null,
+        title: sanitizedTitle,
+        description: sanitizedDescription,
         report_type: reportType,
-        location,
+        location: sanitizedLocation,
         location_type: locationType,
         image_url: imageUrl || null,
         user_id: user.id
