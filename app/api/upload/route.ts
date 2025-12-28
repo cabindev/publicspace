@@ -1,85 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
-  // SECURITY: Upload functionality temporarily disabled due to malware incident
-  // Date: 2024-12-27 - Investigation ongoing
-  // This prevents potential RCE attacks through file uploads
-  return NextResponse.json(
-    { error: 'File upload temporarily disabled for security maintenance' },
-    { status: 503 }
-  )
+// Validate and sanitize video URLs
+function validateVideoUrl(url: string): { isValid: boolean; sanitizedUrl?: string; error?: string } {
+  try {
+    // Basic URL validation
+    const urlObj = new URL(url)
+    
+    // Allowed domains for video hosting
+    const allowedDomains = [
+      'youtube.com',
+      'www.youtube.com', 
+      'youtu.be',
+      'vimeo.com',
+      'www.vimeo.com',
+      'facebook.com',
+      'www.facebook.com',
+      'fb.watch',
+      'drive.google.com',
+      'docs.google.com'
+    ]
+    
+    // Check if domain is allowed
+    const isAllowedDomain = allowedDomains.some(domain => 
+      urlObj.hostname.toLowerCase() === domain || 
+      urlObj.hostname.toLowerCase().endsWith(`.${domain}`)
+    )
+    
+    if (!isAllowedDomain) {
+      return { 
+        isValid: false, 
+        error: 'Video URL must be from YouTube, Vimeo, Facebook, or Google Drive' 
+      }
+    }
+    
+    // Additional security checks
+    if (urlObj.protocol !== 'https:') {
+      return { 
+        isValid: false, 
+        error: 'Video URL must use HTTPS protocol' 
+      }
+    }
+    
+    // Remove potentially dangerous parameters
+    const sanitizedUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`
+    + (urlObj.search ? urlObj.search : '')
+    
+    return { 
+      isValid: true, 
+      sanitizedUrl 
+    }
+    
+  } catch (error) {
+    return { 
+      isValid: false, 
+      error: 'Invalid URL format' 
+    }
+  }
 }
-
-/* Original upload code disabled for security investigation
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('image') as File
+    const { videoUrl } = await request.json()
     
-    if (!file) {
+    if (!videoUrl) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'Video URL is required' },
         { status: 400 }
       )
     }
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-    if (!validTypes.includes(file.type)) {
+    
+    // Validate video URL
+    const validation = validateVideoUrl(videoUrl)
+    
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only JPG, PNG, GIF, WebP are allowed.' },
+        { error: validation.error },
         { status: 400 }
       )
     }
-
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size too large. Maximum 10MB allowed.' },
-        { status: 400 }
-      )
-    }
-
-    // Generate unique filename
-    const fileExtension = file.type.split('/')[1]
-    const fileName = `${randomUUID()}.${fileExtension}`
     
-    // Create directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'report')
-    try {
-      await mkdir(uploadDir, { recursive: true })
-    } catch (error) {
-      // Directory might already exist, ignore error
-    }
-
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const filePath = join(uploadDir, fileName)
-    
-    await writeFile(filePath, buffer)
-
-    // Return the public URL
-    const fileUrl = `/report/${fileName}`
-    
+    // Return sanitized URL
     return NextResponse.json({ 
       success: true, 
-      url: fileUrl,
-      filename: fileName,
-      size: file.size
+      url: validation.sanitizedUrl,
+      type: 'video',
+      message: 'Video URL validated successfully'
     })
     
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('Video URL processing error:', error)
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: 'Failed to process video URL' },
       { status: 500 }
     )
   }
 }
+
+/* File upload functionality disabled for security
+- Previous file upload code removed due to malware incident
+- System now accepts video URLs from trusted platforms instead
+- This provides safer alternative for media sharing
 */

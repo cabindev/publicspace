@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, reportType, location, locationType, imageUrl } = await request.json()
+    const { title, description, reportType, location, locationType, imageUrl, mediaUrl, mediaType } = await request.json()
 
     // Input validation and sanitization
     if (!title || !reportType || !location || !locationType) {
@@ -191,6 +191,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate and sanitize media URL if provided
+    let sanitizedMediaUrl = null
+    if (mediaUrl) {
+      if (typeof mediaUrl !== 'string' || mediaUrl.length > 500) {
+        return NextResponse.json(
+          { error: 'Media URL must be a string with maximum 500 characters' },
+          { status: 400 }
+        )
+      }
+      
+      try {
+        const urlObj = new URL(mediaUrl)
+        // Allow both video and image URLs
+        const allowedDomains = [
+          'youtube.com', 'www.youtube.com', 'youtu.be',
+          'vimeo.com', 'www.vimeo.com',
+          'facebook.com', 'www.facebook.com', 'fb.watch',
+          'drive.google.com', 'docs.google.com',
+          // Image hosting
+          'imgur.com', 'i.imgur.com',
+          'images.unsplash.com', 'unsplash.com'
+        ]
+        
+        const isAllowedDomain = allowedDomains.some(domain => 
+          urlObj.hostname.toLowerCase() === domain || 
+          urlObj.hostname.toLowerCase().endsWith(`.${domain}`)
+        )
+        
+        if (!isAllowedDomain) {
+          return NextResponse.json(
+            { error: 'Media URL must be from allowed platforms (YouTube, Vimeo, Facebook, Google Drive, Imgur, Unsplash)' },
+            { status: 400 }
+          )
+        }
+        
+        if (urlObj.protocol !== 'https:') {
+          return NextResponse.json(
+            { error: 'Media URL must use HTTPS protocol' },
+            { status: 400 }
+          )
+        }
+        
+        sanitizedMediaUrl = mediaUrl.trim()
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Invalid media URL format' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Sanitize strings
     const sanitizedTitle = title.trim().substring(0, 200)
     const sanitizedDescription = description ? description.trim().substring(0, 2000) : null
@@ -204,7 +255,7 @@ export async function POST(request: NextRequest) {
         report_type: reportType,
         location: sanitizedLocation,
         location_type: locationType,
-        image_url: imageUrl || null,
+        image_url: imageUrl || sanitizedMediaUrl || null,
         user_id: user.id
       })
       .select(`
