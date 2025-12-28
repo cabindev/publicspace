@@ -27,7 +27,6 @@ export default function ReportsSection() {
           setApprovedReports(approved.slice(0, 12)) // แสดงแค่ 12 รายการสำหรับ feed
         }
       } catch (error) {
-        console.error('Error fetching approved reports:', error)
       } finally {
         setReportsLoading(false)
       }

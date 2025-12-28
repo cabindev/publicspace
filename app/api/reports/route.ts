@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError) {
-      console.error('Authentication error:', authError)
       return NextResponse.json(
         { error: 'Authentication failed', details: authError.message },
         { status: 401 }
@@ -102,14 +101,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      console.log('No user found in session')
       return NextResponse.json(
         { error: 'No authenticated user found' },
         { status: 401 }
       )
     }
 
-    console.log('Authenticated user:', user.id, user.email)
 
     // Check if user exists in our users table, create if not
     const { error: userCheckError } = await supabase
@@ -120,7 +117,6 @@ export async function POST(request: NextRequest) {
 
     if (userCheckError && userCheckError.code === 'PGRST116') {
       // User doesn't exist, create them
-      console.log('Creating user record for:', user.email)
       const { error: createUserError } = await supabase
         .from('users')
         .insert({
@@ -134,14 +130,12 @@ export async function POST(request: NextRequest) {
         })
 
       if (createUserError) {
-        console.error('Error creating user:', createUserError)
         return NextResponse.json(
           { error: 'Failed to create user record' },
           { status: 500 }
         )
       }
     } else if (userCheckError) {
-      console.error('Error checking user:', userCheckError)
       return NextResponse.json(
         { error: 'Failed to verify user' },
         { status: 500 }
@@ -150,6 +144,7 @@ export async function POST(request: NextRequest) {
 
     const { title, description, reportType, location, locationType, imageUrl } = await request.json()
 
+    // Input validation and sanitization
     if (!title || !reportType || !location || !locationType) {
       return NextResponse.json(
         { error: 'Title, report type, location, and location type are required' },
@@ -157,13 +152,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Security: Validate input lengths and content
+    if (typeof title !== 'string' || title.length > 200) {
+      return NextResponse.json(
+        { error: 'Title must be a string with maximum 200 characters' },
+        { status: 400 }
+      )
+    }
+
+    if (description && (typeof description !== 'string' || description.length > 2000)) {
+      return NextResponse.json(
+        { error: 'Description must be a string with maximum 2000 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Validate report type
+    const validReportTypes = ['SUPPORT', 'COMPLAINT', 'SUGGESTION']
+    if (!validReportTypes.includes(reportType)) {
+      return NextResponse.json(
+        { error: 'Invalid report type' },
+        { status: 400 }
+      )
+    }
+
+    // Validate location type  
+    const validLocationTypes = ['PARK_RECREATION', 'SPORTS_VENUE', 'NATURE_PARK', 'CULTURAL_EVENT', 'MARKET_STREET', 'INSTITUTION']
+    if (!validLocationTypes.includes(locationType)) {
+      return NextResponse.json(
+        { error: 'Invalid location type' },
+        { status: 400 }
+      )
+    }
+
+    // Sanitize strings
+    const sanitizedTitle = title.trim().substring(0, 200)
+    const sanitizedDescription = description ? description.trim().substring(0, 2000) : null
+    const sanitizedLocation = location.trim().substring(0, 500)
+
     const { data: report, error } = await supabase
       .from('reports')
       .insert({
-        title,
-        description: description || null,
+        title: sanitizedTitle,
+        description: sanitizedDescription,
         report_type: reportType,
-        location,
+        location: sanitizedLocation,
         location_type: locationType,
         image_url: imageUrl || null,
         user_id: user.id
@@ -187,8 +220,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating report:', error)
-      return NextResponse.json(
+            return NextResponse.json(
         { error: 'Failed to create report' },
         { status: 500 }
       )
@@ -201,8 +233,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error creating report:', error)
-    return NextResponse.json(
+        return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )

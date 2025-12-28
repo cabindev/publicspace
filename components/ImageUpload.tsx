@@ -46,7 +46,6 @@ export default function ImageUpload({ onImageChange, disabled = false, className
       onImageChange(compressedImage)
       
     } catch (err) {
-      console.error('Image compression error:', err)
       setError('เกิดข้อผิดพลาดในการบีบอัดรูปภาพ')
       onImageChange(null)
     } finally {
