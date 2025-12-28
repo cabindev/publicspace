@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { validateBotChallenge, checkRateLimit, detectBotBehavior } from '@/lib/bot-protection'
 
 const createRouteClient = async () => {
   const cookieStore = await cookies()
@@ -148,7 +149,64 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, reportType, location, locationType, imageUrl, mediaUrl, mediaType } = await request.json()
+    const { 
+      title, description, reportType, location, locationType, 
+      imageUrl, mediaUrl, mediaType,
+      botChallenge, formTiming 
+    } = await request.json()
+
+    // Bot protection: Rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown'
+    const rateLimitKey = `report_${user.id}_${clientIP}`
+    const rateCheck = checkRateLimit(rateLimitKey, 5, 15) // 5 reports per 15 minutes
+    
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many reports. Please try again later.',
+          retryAfter: rateCheck.retryAfter 
+        },
+        { status: 429 }
+      )
+    }
+
+    // Bot protection: Challenge validation
+    if (!botChallenge || !botChallenge.answer || !botChallenge.expectedAnswer || !botChallenge.timestamp) {
+      return NextResponse.json(
+        { error: 'Bot challenge required. Please complete the verification.' },
+        { status: 400 }
+      )
+    }
+    
+    const challengeValidation = validateBotChallenge(
+      botChallenge.answer,
+      botChallenge.expectedAnswer,
+      botChallenge.timestamp
+    )
+    
+    if (!challengeValidation.valid) {
+      return NextResponse.json(
+        { error: challengeValidation.error },
+        { status: 400 }
+      )
+    }
+
+    // Bot protection: Behavior detection
+    const botDetection = detectBotBehavior({
+      userAgent: request.headers.get('user-agent') || '',
+      timing: formTiming,
+      headers: Object.fromEntries(request.headers.entries())
+    })
+    
+    if (botDetection.isBot) {
+      console.warn('Bot detected:', botDetection.reason, 'User:', user.id, 'IP:', clientIP)
+      return NextResponse.json(
+        { error: 'Automated submission detected. Please use the website normally.' },
+        { status: 403 }
+      )
+    }
 
     // Input validation and sanitization
     if (!title || !reportType || !location || !locationType) {
