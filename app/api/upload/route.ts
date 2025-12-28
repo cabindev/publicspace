@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Upload functionality completely disabled
   return NextResponse.json(
     { error: 'File upload functionality is disabled' },
