@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateMathChallenge } from '@/lib/bot-protection'
+import { generateMathChallenge, validateBotChallenge } from '@/lib/bot-protection'
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,5 +66,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Import the validation function
-import { validateBotChallenge } from '@/lib/bot-protection'
