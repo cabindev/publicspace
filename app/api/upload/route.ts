@@ -60,7 +60,27 @@ function validateVideoUrl(url: string): { isValid: boolean; sanitizedUrl?: strin
 
 export async function POST(request: NextRequest) {
   try {
-    const { videoUrl } = await request.json()
+    // Check if request has content
+    const contentType = request.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 400 }
+      )
+    }
+
+    let body
+    try {
+      body = await request.json()
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError)
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
+    const { videoUrl } = body
     
     if (!videoUrl) {
       return NextResponse.json(
