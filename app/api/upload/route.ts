@@ -70,17 +70,10 @@ export async function POST(request: NextRequest) {
     }
 
     let body
-    let rawBody
     try {
-      // Read raw body first for debugging
-      rawBody = await request.text()
-      console.log('Raw request body:', rawBody)
-      
-      // Parse JSON
-      body = JSON.parse(rawBody)
+      body = await request.json()
     } catch (jsonError) {
       console.error('JSON parsing error:', jsonError)
-      console.error('Raw body was:', rawBody)
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
         { status: 400 }
