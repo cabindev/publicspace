@@ -1,3 +1,4 @@
+
 version: '3.8'
 
 services:
@@ -8,7 +9,7 @@ services:
     container_name: publicspace-app
     restart: always
     ports:
-      - "3000:3000"
+      - "0.0.0.0:3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
