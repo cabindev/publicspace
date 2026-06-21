@@ -4,16 +4,21 @@
 
 ## 🔧 Environment Variables Required
 
-### 1. Supabase Configuration
+### 1. Supabase Configuration (new-style API keys)
 ```env
-NEXT_PUBLIC_SUPABASE_URL="https://latplvqjbpclasvvtpeu.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhdHBsdnFqYnBjbGFzdnZ0cGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NjczNzEsImV4cCI6MjA1MDU0MzM3MX0.Wdmtpl5eFJh6KKGSDcczeDzE0DQ7cHEUEXOUNkcvIek"
-SUPABASE_SERVICE_ROLE_KEY="get_from_dashboard"
+NEXT_PUBLIC_SUPABASE_URL="https://kizvpsgapqhxlhukgsdm.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_fGcOt0fNmknygDVYQF6AXw_I4mo95b8"
+SUPABASE_SERVICE_ROLE_KEY="sb_secret_... (get from dashboard, keep secret)"
 ```
+
+> Note: this project uses Supabase's new-style keys. The publishable key acts as
+> the anon/public key for the client; the secret key replaces the service_role key.
+> Both are stored in the existing `NEXT_PUBLIC_SUPABASE_ANON_KEY` /
+> `SUPABASE_SERVICE_ROLE_KEY` variable names the code already reads.
 
 ### 2. Database
 ```env
-DATABASE_URL="postgresql://postgres:password@db.latplvqjbpclasvvtpeu.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:[DB-PASSWORD]@db.kizvpsgapqhxlhukgsdm.supabase.co:5432/postgres"
 ```
 
 ### 3. App Configuration
@@ -26,11 +31,11 @@ PORT=3000
 ## 🔍 Getting Supabase Keys
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project: `latplvqjbpclasvvtpeu`
-3. Go to **Settings** > **API**
+2. Select your project: `kizvpsgapqhxlhukgsdm`
+3. Go to **Settings** > **API Keys**
 4. Copy:
-   - `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ **Keep secret!**
+   - publishable key (`sb_publishable_...`) → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - secret key (`sb_secret_...`) → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ **Keep secret!**
 
 ## 🚀 Deployment Steps
 

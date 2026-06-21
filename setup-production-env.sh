@@ -8,32 +8,32 @@ echo "==============================================================="
 
 # Create .env.local file for production
 cat > .env.local << 'EOF'
-# Supabase Configuration (Updated with latest keys)
-NEXT_PUBLIC_SUPABASE_URL=https://latplvqjbpclasvvtpeu.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhdHBsdnFqYnBjbGFzdnZ0cGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NjczNzEsImV4cCI6MjA1MDU0MzM3MX0.Wdmtpl5eFJh6KKGSDcczeDzE0DQ7cHEUEXOUNkcvIek
+# Supabase Configuration (new-style API keys)
+NEXT_PUBLIC_SUPABASE_URL=https://kizvpsgapqhxlhukgsdm.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_fGcOt0fNmknygDVYQF6AXw_I4mo95b8
 
-# IMPORTANT: Get this from Supabase Dashboard > Settings > API > service_role key
-# https://supabase.com/dashboard/project/latplvqjbpclasvvtpeu/settings/api-keys
-# Copy the "service_role" key (starts with eyJhbGci...)
-SUPABASE_SERVICE_ROLE_KEY=REPLACE_WITH_ACTUAL_SERVICE_ROLE_KEY_FROM_DASHBOARD
+# IMPORTANT: Get this from Supabase Dashboard > Settings > API Keys > Secret keys
+# https://supabase.com/dashboard/project/kizvpsgapqhxlhukgsdm/settings/api-keys
+# Copy the secret key (starts with sb_secret_...)
+SUPABASE_SERVICE_ROLE_KEY=REPLACE_WITH_ACTUAL_SECRET_KEY_FROM_DASHBOARD
 
-# App Configuration  
+# App Configuration
 NEXT_PUBLIC_APP_URL=https://healthypublicspaces.com
 
 # Server Configuration
 NODE_ENV=production
 PORT=3000
 
-# Database
-DATABASE_URL=postgresql://postgres:Rrf5y45euJvUV5LS@db.latplvqjbpclasvvtpeu.supabase.co:5432/postgres
+# Database (replace [DB-PASSWORD] with the project's database password)
+DATABASE_URL=postgresql://postgres:[DB-PASSWORD]@db.kizvpsgapqhxlhukgsdm.supabase.co:5432/postgres
 EOF
 
 echo "✅ Created .env.local file"
 echo ""
-echo "⚠️  IMPORTANT: You must manually update SUPABASE_SERVICE_ROLE_KEY in .env.local"
-echo "   1. Go to: https://supabase.com/dashboard/project/latplvqjbpclasvvtpeu/settings/api-keys"
-echo "   2. Copy the 'service_role' key" 
-echo "   3. Replace 'REPLACE_WITH_ACTUAL_SERVICE_ROLE_KEY' in .env.local"
+echo "⚠️  IMPORTANT: You must manually update SUPABASE_SERVICE_ROLE_KEY (and the DB password) in .env.local"
+echo "   1. Go to: https://supabase.com/dashboard/project/kizvpsgapqhxlhukgsdm/settings/api-keys"
+echo "   2. Copy the secret key (starts with sb_secret_...)"
+echo "   3. Replace 'REPLACE_WITH_ACTUAL_SECRET_KEY_FROM_DASHBOARD' in .env.local"
 echo ""
 echo "🔧 Running deployment commands..."
 
